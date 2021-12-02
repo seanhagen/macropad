@@ -8,10 +8,17 @@ int fadeAmount = 5;    // how many points to fade the LED by
 void setup() {
   // declare pin to be an output:
   pinMode(led, OUTPUT);
+  Serial.print("LED pin: ");
+  Serial.println(led);
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
+  Serial.print("Setting led (pin:");
+  Serial.print(led);
+  Serial.print(") to brightness: ");
+  Serial.println(brightness);
+
   // set the brightness
   analogWrite(led, brightness);
 
