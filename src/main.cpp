@@ -6,10 +6,28 @@
 #include <SPI.h>
 #include <Wire.h>
 
-// // encoder rotation a
-// #define PIN_ROTA 17
-// // encoder rotation b
-// #define PIN_ROTB 18
+// LEDs
+#define PIN_LED 13
+
+// Extra hardware!
+#define PIN_SWITCH 0
+#define PIN_SPEAKER_ENABLE 14
+#define PIN_SPEAKER 16
+
+#define PIN_ROTB 17
+#define PIN_ROTA 18
+
+#define OLED_CS 22
+#define OLED_RST 23
+#define OLED_DC 24
+
+#define PIN_NEOPIXEL 19
+#define NUM_NEOPIXEL 12
+
+// SPI
+#define PIN_SPI1_MISO 28
+#define PIN_SPI1_MOSI 27
+#define PIN_SPI1_SCK 26
 
 // oled stuff
 #define OLED_SCK 26
@@ -42,19 +60,19 @@ Adafruit_SH1106G display =
 // Create the rotary encoder
 RotaryEncoder encoder(PIN_ROTA, PIN_ROTB, RotaryEncoder::LatchMode::FOUR3);
 
+bool posCheck = false;
+
 void checkPosition() {
   // just call tick() to check the state.
   encoder.tick();
+  posCheck = true;
 }
+
 // our encoder position state
 int encoder_pos = 0;
 
 void setup() {
   Serial.begin(115200);
-  delay(2000);
-  Serial.println("waiting 2 seconds");
-  delay(2000);
-  Serial.println("ready to goooooooo");
   // while (!Serial) { delay(10); }     // wait till serial port is opened
   delay(100); // RP2040 delay is not a bad idea
 
@@ -89,18 +107,21 @@ void setup() {
   display.setTextColor(SH110X_WHITE,
                        SH110X_BLACK); // white text, black background
 
+  pixels.setBrightness(30);
+
   pinMode(PIN_SPEAKER, OUTPUT);
   digitalWrite(PIN_SPEAKER, LOW);
-  // tone(PIN_SPEAKER, 988, 100); // tone1 - B5
-  // delay(100);
-  // tone(PIN_SPEAKER, 1319, 200); // tone2 - E6
-  // delay(200);
 }
 
 uint8_t j = 0;
-bool i2c_found[128] = {false};
+// bool i2c_found[128] = {false};
 
 void loop() {
+  if (posCheck) {
+    posCheck = false;
+    Serial.println("encoder thing!");
+  }
+
   display.clearDisplay();
   display.setCursor(0, 0);
   display.println("* Adafruit Macropad *");
@@ -118,40 +139,11 @@ void loop() {
   display.print("Rotary encoder: ");
   display.print(encoder_pos);
 
-  // Scanning takes a while so we don't do it all the time
-  if ((j & 0x3F) == 0) {
-    Serial.println("Scanning I2C: ");
-    Serial.print("Found I2C address 0x");
-    for (uint8_t address = 0; address <= 0x7F; address++) {
-      Wire.beginTransmission(address);
-      i2c_found[address] = (Wire.endTransmission() == 0);
-      if (i2c_found[address]) {
-        Serial.print("0x");
-        Serial.print(address, HEX);
-        Serial.print(", ");
-      }
-    }
-    Serial.println();
-  }
-
-  display.setCursor(0, 16);
-  display.print("I2C Scan: ");
-  for (uint8_t address = 0; address <= 0x7F; address++) {
-    if (!i2c_found[address])
-      continue;
-    display.print("0x");
-    display.print(address, HEX);
-    display.print(" ");
-  }
-
   // check encoder press
   display.setCursor(0, 24);
   if (!digitalRead(PIN_SWITCH)) {
     Serial.println("Encoder button");
     display.print("Encoder pressed ");
-    pixels.setBrightness(255); // bright!
-  } else {
-    pixels.setBrightness(80);
   }
 
   for (int i = 0; i < pixels.numPixels(); i++) {
