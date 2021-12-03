@@ -27,17 +27,10 @@ void setup() {
   // set rotary encoder inputs and interrupts
   pinMode(PIN_ROTA, INPUT_PULLUP);
   pinMode(PIN_ROTB, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(PIN_ROTA), checkPosition, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_ROTB), checkPosition, FALLING);
 }
 
 void loop() {
-  if (posCheck) {
-    Serial.println("encoder thing!");
-    posCheck = false;
-  }
-
-  // encoder.tick(); // check the encoder
+  encoder.tick(); // check the encoder
   int newPos = encoder.getPosition();
   if (encoder_pos != newPos) {
     Serial.print("Encoder:");
