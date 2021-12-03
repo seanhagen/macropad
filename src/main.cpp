@@ -1,34 +1,179 @@
 #include <Arduino.h>
 
-int led = LED_BUILTIN; // the PWM pin the LED is attached to
-int brightness = 0;    // how bright the LED is
-int fadeAmount = 5;    // how many points to fade the LED by
+#include <Adafruit_NeoPixel.h>
+#include <Adafruit_SH110X.h>
+#include <RotaryEncoder.h>
+#include <SPI.h>
+#include <Wire.h>
 
-// the setup routine runs once when you press reset:
-void setup() {
-  // declare pin to be an output:
-  pinMode(led, OUTPUT);
-  Serial.print("LED pin: ");
-  Serial.println(led);
+// // encoder rotation a
+// #define PIN_ROTA 17
+// // encoder rotation b
+// #define PIN_ROTB 18
+
+// oled stuff
+#define OLED_SCK 26
+#define OLED_MOSI 27
+
+// Create the neopixel strip with the built in definitions NUM_NEOPIXEL and
+// PIN_NEOPIXEL
+Adafruit_NeoPixel pixels =
+    Adafruit_NeoPixel(NUM_NEOPIXEL, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+uint32_t Wheel(byte WheelPos) {
+  if (WheelPos < 85) {
+    return pixels.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  } else if (WheelPos < 170) {
+    WheelPos -= 85;
+    return pixels.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  } else {
+    WheelPos -= 170;
+    return pixels.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  }
 }
 
-// the loop routine runs over and over again forever:
-void loop() {
-  Serial.print("Setting led (pin:");
-  Serial.print(led);
-  Serial.print(") to brightness: ");
-  Serial.println(brightness);
+// Create the OLED display
+Adafruit_SH1106G display =
+    // Adafruit_SH1106G(128, 64, &SPI, OLED_DC, OLED_RST, OLED_CS);
+    Adafruit_SH1106G(128, 64, OLED_MOSI, OLED_SCK, OLED_DC, OLED_RST, OLED_CS);
 
-  // set the brightness
-  analogWrite(led, brightness);
+// Create the rotary encoder
+RotaryEncoder encoder(PIN_ROTA, PIN_ROTB, RotaryEncoder::LatchMode::FOUR3);
 
-  // change the brightness for next time through the loop:
-  brightness = brightness + fadeAmount;
+void checkPosition() {
+  // just call tick() to check the state.
+  encoder.tick();
+}
+// our encoder position state
+int encoder_pos = 0;
 
-  // reverse the direction of the fading at the ends of the fade:
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount;
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+  Serial.println("waiting 2 seconds");
+  delay(2000);
+  Serial.println("ready to goooooooo");
+  // while (!Serial) { delay(10); }     // wait till serial port is opened
+  delay(100); // RP2040 delay is not a bad idea
+
+  Serial.println("Adafruit Macropad with RP2040");
+
+  // start pixels!
+  pixels.begin();
+  pixels.setBrightness(255);
+  pixels.show(); // Initialize all pixels to 'off'
+
+  // Start OLED
+  display.begin(0, true); // we dont use the i2c address but we will reset!
+  display.display();
+
+  // set all mechanical keys to inputs
+  for (uint8_t i = 0; i <= 12; i++) {
+    pinMode(i, INPUT_PULLUP);
   }
-  // wait for 30 milliseconds to see the dimming effect
-  delay(30);
+
+  // set rotary encoder inputs and interrupts
+  pinMode(PIN_ROTA, INPUT_PULLUP);
+  pinMode(PIN_ROTB, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PIN_ROTA), checkPosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_ROTB), checkPosition, CHANGE);
+
+  // We will use I2C for scanning the Stemma QT port
+  Wire.begin();
+
+  // text display tests
+  display.setTextSize(1);
+  display.setTextWrap(false);
+  display.setTextColor(SH110X_WHITE,
+                       SH110X_BLACK); // white text, black background
+
+  pinMode(PIN_SPEAKER, OUTPUT);
+  digitalWrite(PIN_SPEAKER, LOW);
+  // tone(PIN_SPEAKER, 988, 100); // tone1 - B5
+  // delay(100);
+  // tone(PIN_SPEAKER, 1319, 200); // tone2 - E6
+  // delay(200);
+}
+
+uint8_t j = 0;
+bool i2c_found[128] = {false};
+
+void loop() {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("* Adafruit Macropad *");
+
+  encoder.tick(); // check the encoder
+  int newPos = encoder.getPosition();
+  if (encoder_pos != newPos) {
+    Serial.print("Encoder:");
+    Serial.print(newPos);
+    Serial.print(" Direction:");
+    Serial.println((int)(encoder.getDirection()));
+    encoder_pos = newPos;
+  }
+  display.setCursor(0, 8);
+  display.print("Rotary encoder: ");
+  display.print(encoder_pos);
+
+  // Scanning takes a while so we don't do it all the time
+  if ((j & 0x3F) == 0) {
+    Serial.println("Scanning I2C: ");
+    Serial.print("Found I2C address 0x");
+    for (uint8_t address = 0; address <= 0x7F; address++) {
+      Wire.beginTransmission(address);
+      i2c_found[address] = (Wire.endTransmission() == 0);
+      if (i2c_found[address]) {
+        Serial.print("0x");
+        Serial.print(address, HEX);
+        Serial.print(", ");
+      }
+    }
+    Serial.println();
+  }
+
+  display.setCursor(0, 16);
+  display.print("I2C Scan: ");
+  for (uint8_t address = 0; address <= 0x7F; address++) {
+    if (!i2c_found[address])
+      continue;
+    display.print("0x");
+    display.print(address, HEX);
+    display.print(" ");
+  }
+
+  // check encoder press
+  display.setCursor(0, 24);
+  if (!digitalRead(PIN_SWITCH)) {
+    Serial.println("Encoder button");
+    display.print("Encoder pressed ");
+    pixels.setBrightness(255); // bright!
+  } else {
+    pixels.setBrightness(80);
+  }
+
+  for (int i = 0; i < pixels.numPixels(); i++) {
+    pixels.setPixelColor(i, Wheel(((i * 256 / pixels.numPixels()) + j) & 255));
+  }
+
+  for (int i = 1; i <= 12; i++) {
+    if (!digitalRead(i)) { // switch pressed!
+      Serial.print("Switch ");
+      Serial.println(i);
+      pixels.setPixelColor(i - 1, 0xFFFFFF); // make white
+      // move the text into a 3x4 grid
+      display.setCursor(((i - 1) % 3) * 48, 32 + ((i - 1) / 3) * 8);
+      display.print("KEY");
+      display.print(i);
+    }
+  }
+
+  // show neopixels, incredment swirl
+  pixels.show();
+  j++;
+
+  // display oled
+  display.display();
 }
