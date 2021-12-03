@@ -60,7 +60,7 @@ Adafruit_SH1106G display =
 // Create the rotary encoder
 RotaryEncoder encoder(PIN_ROTA, PIN_ROTB, RotaryEncoder::LatchMode::FOUR3);
 
-bool posCheck = false;
+volatile bool posCheck = false;
 
 void checkPosition() {
   // just call tick() to check the state.
@@ -95,8 +95,10 @@ void setup() {
   // set rotary encoder inputs and interrupts
   pinMode(PIN_ROTA, INPUT_PULLUP);
   pinMode(PIN_ROTB, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(PIN_ROTA), checkPosition, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(PIN_ROTB), checkPosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_ROTA), checkPosition, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_ROTB), checkPosition, FALLING);
+  // attachInterrupt(digitalPinToInterrupt(PIN_ROTA), checkPosition, CHANGE);
+  // attachInterrupt(digitalPinToInterrupt(PIN_ROTB), checkPosition, CHANGE);
 
   // We will use I2C for scanning the Stemma QT port
   Wire.begin();
@@ -118,15 +120,15 @@ uint8_t j = 0;
 
 void loop() {
   if (posCheck) {
-    posCheck = false;
     Serial.println("encoder thing!");
+    posCheck = false;
   }
 
   display.clearDisplay();
   display.setCursor(0, 0);
   display.println("* Adafruit Macropad *");
 
-  encoder.tick(); // check the encoder
+  // encoder.tick(); // check the encoder
   int newPos = encoder.getPosition();
   if (encoder_pos != newPos) {
     Serial.print("Encoder:");
