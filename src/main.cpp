@@ -3,17 +3,14 @@
 
 #define PIN_ROTB 18
 #define PIN_ROTA 17
+#define PIN_SWITCH 0
 
 // Create the rotary encoder
 RotaryEncoder encoder(PIN_ROTA, PIN_ROTB, RotaryEncoder::LatchMode::FOUR3);
 
-volatile bool posCheck = false;
-
-void checkPosition() {
-  // just call tick() to check the state.
-  encoder.tick();
-  posCheck = true;
-}
+volatile bool btnPressed = false;
+bool btnCurrentState = false;
+void btnPress() { btnPressed = !btnPressed; }
 
 // our encoder position state
 int encoder_pos = 0;
@@ -24,12 +21,20 @@ void setup() {
 
   Serial.println("Adafruit Macropad with RP2040");
 
-  // set rotary encoder inputs and interrupts
-  pinMode(PIN_ROTA, INPUT_PULLUP);
-  pinMode(PIN_ROTB, INPUT_PULLUP);
+  pinMode(PIN_SWITCH, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PIN_SWITCH), btnPress, CHANGE);
 }
 
 void loop() {
+  if (btnCurrentState != btnPressed) {
+    btnCurrentState = btnPressed;
+    if (btnCurrentState) {
+      Serial.println("encoder button released");
+    } else {
+      Serial.println("encoder button pressed");
+    }
+  }
+
   encoder.tick(); // check the encoder
   int newPos = encoder.getPosition();
   if (encoder_pos != newPos) {
