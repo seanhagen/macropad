@@ -14,8 +14,8 @@
 #define PIN_SPEAKER_ENABLE 14
 #define PIN_SPEAKER 16
 
-#define PIN_ROTB 17
-#define PIN_ROTA 18
+#define PIN_ROTB 18
+#define PIN_ROTA 17
 
 #define OLED_CS 22
 #define OLED_RST 23
