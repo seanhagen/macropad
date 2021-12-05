@@ -28,3 +28,8 @@ Also, holding key & rotating encoder could be handy for some things too.
 Could be handy to have something that can talk via Serial or some other protocol
 with the Macropad. Changing the color of the NeoPixel for a key based on what's
 happening in the editor, for example. Or showing a status indicator in the OLED.
+
+
+## Resources
+
+- [Adafruit Macropad RP2040](https://cdn-learn.adafruit.com/assets/assets/000/104/022/original/adafruit_products_Adafruit_MacroPad_RP2040_Pinout.png?1629726427)
