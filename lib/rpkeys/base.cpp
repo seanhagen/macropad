@@ -18,18 +18,18 @@ RPKeyboard::RPKeyboard() {
 }
 
 void RPKeyboard::setup(void) {
-  setupNeopixels();
-  setupDisplay();
-  setupSpeaker();
-  setupKeys();
+  // setupNeopixels();
+  // setupDisplay();
+  // setupSpeaker();
+  // setupKeys();
   setupEncoder();
 
-  // We will use I2C for scanning the Stemma QT port
-  Wire.begin();
+  // // We will use I2C for scanning the Stemma QT port
+  // Wire.begin();
 }
 
 void RPKeyboard::loop(void) {
   loopEncoder();
   // loopNeopixels();
-  loopDisplay();
+  // loopDisplay();
 }

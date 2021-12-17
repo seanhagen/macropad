@@ -1,12 +1,13 @@
 #ifndef BASE_H
 #define BASE_H
 
-#include <Adafruit_NeoPixel.h>
-#include <Adafruit_SH110X.h>
-#include <RotaryEncoder.h>
+#include <Arduino.h>
+// #include <Adafruit_NeoPixel.h>
+// #include <Adafruit_SH110X.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <tusb.h>
+// #include <tusb.h>
+// #include <RotaryEncoder.h>
 
 // Extra hardware!
 #define PIN_SWITCH 0
@@ -46,26 +47,39 @@ public:
   void loop();
 
 private:
-  void setupNeopixels();
-  void setupDisplay();
-  void setupSpeaker();
+  // void setupNeopixels();
+  // void setupDisplay();
+  // void setupSpeaker();
   void setupEncoder();
-  void setupKeys();
+  // void setupKeys();
 
-  void loopNeopixels();
-  void loopDisplay();
-  void loopSpeaker();
+  // void loopNeopixels();
+  // void loopDisplay();
+  // void loopSpeaker();
   void loopEncoder();
-  void loopKeys();
+  // void loopKeys();
 
   int encoder_pos = 0;
   uint8_t pixelIdx = 0;
 
-  RotaryEncoder _encoder;
-  Adafruit_SH1106G _display;
-  Adafruit_NeoPixel _pixels;
+  // RotaryEncoder _encoder;
+  // Adafruit_SH1106G _display;
+  // Adafruit_NeoPixel _pixels;
 
-  uint32_t Wheel(byte WheelPos);
+  // uint32_t Wheel(byte WheelPos);
+
+  // rotary encoder stuff
+  volatile int8_t _oldState;
+
+  volatile long _position;    // Internal position (4 times _positionExt)
+  volatile long _positionExt; // External position
+  volatile long
+      _positionExtPrev; // External position (used only for direction checking)
+
+  unsigned long
+      _positionExtTime; // The time the last position change was detected.
+  unsigned long _positionExtTimePrev; // The time the previous position change
+                                      // was detected.
 };
 
 #endif
